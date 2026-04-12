@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人打卡紀錄表</title>
+    <style>
+    :root {
+        --primary: #190b99;
+        --success: #28a745;
+        --danger: #d10000;
+        --accent: #ce73e4;
+        --bg: #f4f7f6;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg);
+        margin: 0; padding: 0; color: #333;
+    }
+
+    .control-panel {
+        position: sticky; top: 0; z-index: 100;
+        background: white; padding: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-bottom: 2px solid var(--accent);
+    }
+
+    .header-title { text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: block; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+
+    select, input {
+        width: 100%; height: 38px; border: 1px solid #ccc;
+        border-radius: 8px; font-size: 14px; background-color: #fff;
+        box-sizing: border-box; padding: 0 8px;
+    }
+
+    .config-summary {
+        background: #e6f3ff; padding: 12px; border-radius: 8px;
+        margin-bottom: 10px; font-size: 13px;
+    }
+
+    .config-row {
+        display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    }
+
+    .config-row input { width: 80px; height: 30px; text-align: right; }
+
+    .total-display {
+        text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #adc6ff;
+        font-size: 15px; font-weight: bold;
+    }
+
+    .total-display b { color: blue; font-size: 1.2rem; }
+
+    .input-area {
+        background: #fff5f8; padding: 10px;
+        border-radius: 8px; border: 1px solid #ffd1df; margin-bottom: 10px;
+    }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    button {
+        flex: 1; min-width: 70px; height: 40px; border-radius: 20px;
+        font-weight: bold; border: 2px solid; background: white;
+        cursor: pointer; font-size: 13px;
+    }
+
+    .add-btn { border-color: var(--success); color: var(--success); }
+    .save { border-color: var(--accent); color: var(--accent); }
+    .clear { border-color: var(--danger); color: var(--danger); }
+
+    .data-container { padding: 10px; }
+
+    #workDates {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+
+    .record-card {
+        background: white; padding: 12px; border-radius: 10px;
+        border-left: 5px solid var(--primary);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative;
+    }
+
+    .delete-mark {
+        position: absolute; top: 5px; right: 8px;
+        color: #ccc; font-size: 18px; cursor: pointer;
+    }
+
+    @media print {
+        .control-panel, .input-area, .delete-mark { display: none !important; }
+        #workDates { display: block !important; }
+        .record-card { border: 1px solid #eee; margin-bottom: 5px; page-break-inside: avoid; }
+    }
+    </style>
+</head>
+
+<body>
+    <div class="control-panel">
+        <span class="header-title">打卡紀錄表</span>
+        
+        <div class="info-grid">
+            <select id="selectyear" onchange="updateDayOptions(); loadData();"></select>
+            <select id="selectmonth" onchange="updateDayOptions(); loadData();"></select>
+        </div>
+
+        <div class="config-summary">
+            <div class="config-row">
+                <span>日薪 (全日)：</span>
+                <input type="number" id="dailyRate" value="1500" onchange="calculate()">
+            </div>
+            <div class="config-row">
+                <span>加班費率 (倍)：</span>
+                <input type="number" id="otMultiplier" value="1.33" step="0.01" onchange="calculate()">
+            </div>
+            <div class="config-row">
+                <span>扣勞健保：</span>
+                <input type="number" id="deduction" value="958" onchange="calculate()">
+            </div>
+            <div class="total-display">
+                實領金額：<b id="headerFinalSalary">0</b>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px;">
+                <select id="inputDay"></select>
+                <select id="inputShift">
+                    <option value="full">全日</option>
+                    <option value="half">半日</option>
+                    <option value="overtime">加班</option>
+                </select>
+            </div>
+            <button class="add-btn" style="width: 100%;" onclick="addRecord()">新增紀錄</button>
+        </div>
+
+        <div class="btn-group">
+            <button class="save" onclick="window.print()">列印 / 存檔</button>
+            <button class="clear" onclick="clearTable()">清空本月</button>
+        </div>
+    </div>
+
+    <div class="data-container">
+        <div id="workDates"></div>
+        <div id="footerSummary" style="margin-top: 20px; text-align: right; padding: 10px; font-size: 14px; display: none;">
+            應領總計 (未扣)：<span id="footerTotalSalary" style="font-weight: bold;">0 元</span>
+        </div>
+    </div>
+
+    <script>
+        let tempTimeRecords = {};
+
+        // 初始化年月選單
+        function initYearMonth() {
+            const yearSel = document.getElementById('selectyear'), monthSel = document.getElementById('selectmonth');
+            const now = new Date();
+            for (let i = now.getFullYear() - 1; i <= now.getFullYear() + 1; i++) {
+                yearSel.add(new Option(i + "年", i, i === now.getFullYear(), i === now.getFullYear()));
+            }
+            for (let i = 1; i <= 12; i++) {
+                monthSel.add(new Option(i + "月", i, i === (now.getMonth() + 1), i === (now.getMonth() + 1)));
+            }
+            updateDayOptions(); // 初始化日期(天)的下拉選單
+        }
+
+        // 根據選中的年月，更新「日」的選項
+        function updateDayOptions() {
+            const year = parseInt(document.getElementById('selectyear').value);
+            const month = parseInt(document.getElementById('selectmonth').value);
+            const daySel = document.getElementById('inputDay');
+            
+            // 取得該月最後一天
+            const lastDay = new Date(year, month, 0).getDate();
+            const currentDay = new Date().getDate();
+
+            daySel.innerHTML = '';
+            for (let i = 1; i <= lastDay; i++) {
+                daySel.add(new Option(i + "日", i, i === currentDay, i === currentDay));
+            }
+        }
+
+        function addRecord() {
+            const year = document.getElementById('selectyear').value;
+            const month = document.getElementById('selectmonth').value.padStart(2, '0');
+            const day = document.getElementById('inputDay').value.padStart(2, '0');
+            const fullDate = `${year}-${month}-${day}`; // 組合成標準格式儲存
+            
+            const shift = document.getElementById('inputShift').value;
+            tempTimeRecords[fullDate] = shift;
+            calculate();
+        }
+
+        function deleteRecord(date) {
+            delete tempTimeRecords[date];
+            calculate();
+        }
+
+        function calculate() {
+            const container = document.getElementById('workDates');
+            const footer = document.getElementById('footerSummary');
+            const rate = parseFloat(document.getElementById("dailyRate").value) || 0;
+            const deduction = parseFloat(document.getElementById("deduction").value) || 0;
+            const otMult = parseFloat(document.getElementById("otMultiplier").value) || 1;
+            
+            container.innerHTML = '';
+            let totalSalary = 0;
+            const sortedDates = Object.keys(tempTimeRecords).sort();
+
+            if (sortedDates.length === 0) {
+                container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#999;">尚未有紀錄</div>';
+                footer.style.display = "none";
+                document.getElementById("headerFinalSalary").innerText = "0 元";
+            } else {
+                footer.style.display = "block";
+                sortedDates.forEach(date => {
+                    const shiftKey = tempTimeRecords[date];
+                    let multiplier = 1, label = "全日";
+                    if (shiftKey === 'half') { multiplier = 0.5; label = "半日"; }
+                    else if (shiftKey === 'overtime') { multiplier = otMult; label = "加班"; }
+
+                    const pay = Math.floor(rate * multiplier);
+                    totalSalary += pay;
+
+                    const card = document.createElement('div');
+                    card.className = 'record-card';
+                    if(shiftKey === 'overtime') card.style.borderLeftColor = 'var(--danger)';
+                    if(shiftKey === 'half') card.style.borderLeftColor = 'var(--accent)';
+
+                    card.innerHTML = `
+                        <div class="delete-mark" onclick="deleteRecord('${date}')">×</div>
+                        <div style="font-weight:bold;">${date}</div>
+                        <div style="font-size: 0.85rem; color:#666;">${label} (x${multiplier})</div>
+                        <div style="color:var(--danger); font-weight:bold; margin-top:5px;">$${pay.toLocaleString()}</div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            const final = totalSalary - deduction;
+            document.getElementById("footerTotalSalary").innerText = totalSalary.toLocaleString() + " 元";
+            document.getElementById("headerFinalSalary").innerText = final.toLocaleString() + " 元";
+            saveToBrowser();
+        }
+
+        function saveToBrowser() {
+            const year = document.getElementById("selectyear").value;
+            const month = document.getElementById("selectmonth").value;
+            localStorage.setItem(`personal_data_${year}_${month}`, JSON.stringify(tempTimeRecords));
+            localStorage.setItem(`set_dailyRate`, document.getElementById("dailyRate").value);
+            localStorage.setItem(`set_deduction`, document.getElementById("deduction").value);
+            localStorage.setItem(`set_otMult`, document.getElementById("otMultiplier").value);
+        }
+
+        function loadData() {
+            const year = document.getElementById("selectyear").value;
+            const month = document.getElementById("selectmonth").value;
+            const savedRecords = localStorage.getItem(`personal_data_${year}_${month}`);
+            tempTimeRecords = savedRecords ? JSON.parse(savedRecords) : {};
+            
+            const r = localStorage.getItem(`set_dailyRate`); if(r) document.getElementById("dailyRate").value = r;
+            const d = localStorage.getItem(`set_deduction`); if(d) document.getElementById("deduction").value = d;
+            const o = localStorage.getItem(`set_otMult`); if(o) document.getElementById("otMultiplier").value = o;
+
+            calculate();
+        }
+
+        function clearTable() {
+            if (confirm("確定清空本月紀錄？")) {
+                tempTimeRecords = {};
+                calculate();
+            }
+        }
+
+        window.onload = () => { initYearMonth(); loadData(); };
+    </script>
+</body>
+</html>
