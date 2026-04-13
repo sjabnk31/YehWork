@@ -1,284 +1,345 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="葉打卡">
     <link rel="apple-touch-icon" href="angrybird.jpg">
     <link rel="apple-touch-icon" sizes="180x180" href="angrybird.jpg">
     <link rel="apple-touch-icon-precomposed" href="angrybird.jpg">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人打卡紀錄表</title>
+    <title>葉打卡</title>
     <style>
     :root {
-        --primary: #190b99;
-        --success: #28a745;
-        --danger: #d10000;
-        --accent: #ce73e4;
-        --bg: #f4f7f6;
+        --bg-full: #fff176;     --text-full: #5d4037;
+        --bg-half: #fff3e0;     --text-half: #f57c00;
+        --bg-ot: #f3e5f5;       --text-ot: #7b1fa2;
+        --bg-holiday: #ffebee;  --text-holiday: #d32f2f;
+        --calendar-main-bg: #e1f7f9;
+        --text-main: #1a5276;
+        --today-marker: #1a5276; /* 「今」字的顏色 */
+        --border-soft: #b2ebf2;
     }
 
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background-color: var(--bg);
-        margin: 0; padding: 0; color: #333;
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    
+    body { 
+        font-family: -apple-system, "Microsoft JhengHei", sans-serif;
+        background: #f8fafb; margin: 0; padding: 15px 10px;
+        display: flex; flex-direction: column; align-items: center;
     }
 
-    .control-panel {
-        position: sticky; top: 0; z-index: 100;
-        background: white; padding: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border-bottom: 2px solid var(--accent);
+    .calendar-card { 
+        background: var(--calendar-main-bg); width: 100%; max-width: 450px; 
+        border-radius: 28px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); 
     }
 
-    .header-title { text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: block; }
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .calendar-title-text { color: var(--text-main); font-size: 1.3rem; font-weight: 800; }
+    .nav-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.5); color: var(--text-main); font-size: 20px; display: flex; justify-content: center; align-items: center; }
 
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+    .weekday { text-align: center; font-size: 13px; font-weight: bold; color: #70dae8; padding-bottom: 8px; }
 
-    select, input {
-        width: 100%; height: 38px; border: 1px solid #ccc;
-        border-radius: 8px; font-size: 14px; background-color: #fff;
-        box-sizing: border-box; padding: 0 8px;
+    /* --- 日期按鈕基礎 --- */
+    .date-btn {
+        aspect-ratio: 1; border: 1px solid var(--border-soft); background: white;
+        border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        font-size: 16px; font-weight: 600; color: var(--text-main);
+        position: relative; padding: 0; outline: none; transition: 0.2s;
     }
 
-    .config-summary {
-        background: #e6f3ff; padding: 12px; border-radius: 8px;
-        margin-bottom: 10px; font-size: 13px;
+    /* 狀態標籤（右上角） */
+    .date-btn[data-label]::after {
+        content: attr(data-label); position: absolute; top: 3px; right: 3px; 
+        font-size: 10px; font-weight: 900; color: inherit;
     }
 
-    .config-row {
-        display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+   /* --- 今天的特別樣式 --- */
+
+    /* 1. 當「今天」還沒有打卡狀態時：顯示粗邊框與底部的「今」 */
+    .is-today {
+        border: 3px solid var(--today-marker) !important;
+        position: relative;
+        box-shadow: 0 0 10px rgba(26, 82, 118, 0.1);
     }
 
-    .config-row input { width: 80px; height: 30px; text-align: right; }
-
-    .total-display {
-        text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #adc6ff;
-        font-size: 15px; font-weight: bold;
+    /* 2. 當「今天」有了打卡狀態（含有 style- 類別時）：拿掉邊框，恢復成一般的樣子 */
+    .is-today[class*="style-"] {
+        border: none !important;
+        box-shadow: none;
     }
 
-    .total-display b { color: blue; font-size: 1.2rem; }
-
-    .input-area {
-        background: #fff5f8; padding: 10px;
-        border-radius: 8px; border: 1px solid #ffd1df; margin-bottom: 10px;
+    /* 3. 無論有沒有打卡，「今」字都顯示在數字下方 */
+    .is-today::before {
+        content: "今";
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        font-weight: 900;
+        color: var(--today-marker);
+        z-index: 2; /* 確保在背景顏色之上 */
     }
 
-    .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
-
-    button {
-        flex: 1; min-width: 70px; height: 40px; border-radius: 20px;
-        font-weight: bold; border: 2px solid; background: white;
-        cursor: pointer; font-size: 13px;
+    /* 4. 打卡後，讓「今」字顏色自動跟隨該狀態的文字顏色（例如全日變深棕色） */
+    .is-today[class*="style-"]::before {
+        color: inherit;
+        bottom: 4px; /* 打卡後沒邊框了，稍微往下一點點 */
     }
+    /* 狀態顏色 */
+    .style-full { background-color: var(--bg-full) !important; color: var(--text-full) !important; border: none !important; }
+    .style-half { background-color: var(--bg-half) !important; color: var(--text-half) !important; border: none !important; }
+    .style-ot { background-color: var(--bg-ot) !important; color: var(--text-ot) !important; border: none !important; }
+    .style-holiday { background-color: var(--bg-holiday) !important; color: var(--text-holiday) !important; border: none !important; }
 
-    .add-btn { border-color: var(--success); color: var(--success); }
-    .save { border-color: var(--accent); color: var(--accent); }
-    .clear { border-color: var(--danger); color: var(--danger); }
+    .other-month { opacity: 0.1 !important; pointer-events: none; background: transparent !important; border: none !important; }
 
-    .data-container { padding: 10px; }
+    /* 圖例與資訊卡片 */
+    .legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; font-size: 12px; color: var(--text-main); text-align: center; }
+    .legend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .dot { width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
 
-    #workDates {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
+    .info-card { background: white; width: 100%; max-width: 450px; border-radius: 24px; padding: 20px; margin-top: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #1a5276; font-size: 16px; }
+    .log-list { border-left: 2px solid #e1f7f9; margin-left: 5px; padding-left: 15px; }
+    .log-item { position: relative; margin-bottom: 15px; font-size: 14px; }
+    .log-item::before { content: ''; position: absolute; left: -19px; top: 6px; width: 6px; height: 6px; background: #70dae8; border-radius: 50%; }
+    .log-date { color: #888; font-size: 12px; }
+    .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f2f5; font-size: 15px; }
 
-    .record-card {
-        background: white; padding: 12px; border-radius: 10px;
-        border-left: 5px solid var(--primary);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative;
-    }
-
-    .delete-mark {
-        position: absolute; top: 5px; right: 8px;
-        color: #ccc; font-size: 18px; cursor: pointer;
-    }
-
-    @media print {
-        .control-panel, .input-area, .delete-mark { display: none !important; }
-        #workDates { display: block !important; }
-        .record-card { border: 1px solid #eee; margin-bottom: 5px; page-break-inside: avoid; }
-    }
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-
 <body>
-    <div class="control-panel">
-        <span class="header-title">打卡紀錄表</span>
+
+<div id="loadingOverlay">
+    <div style="width: 45px; height: 45px; border: 4px solid #f3f3f3; border-top: 4px solid #1a5276; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <p style="margin-top: 15px; color: #1a5276; font-weight: bold;">資料同步中...</p>
+</div>
+
+<div class="calendar-card">
+    <div class="nav-bar">
+        <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="calendar-title-text" onclick="goToday()">
+            <span id="yearText"></span> <span id="monthText"></span>
+        </div>
+        <button class="nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="days-grid">
+        <div class="weekday">一</div><div class="weekday">二</div><div class="weekday">三</div>
+        <div class="weekday">四</div><div class="weekday">五</div><div class="weekday">六</div>
+        <div class="weekday">日</div>
+    </div>
+    <div id="calendarBody" class="days-grid"></div>
+    
+    <div class="legend">
+        <div class="legend-item"><div class="dot style-full">全</div>全日</div>
+        <div class="legend-item"><div class="dot style-half">半</div>半日</div>
+        <div class="legend-item"><div class="dot style-ot">加</div>加班</div>
+        <div class="legend-item"><div class="dot style-holiday">休</div>休息</div>
+    </div>
+</div>
+
+<div class="info-card">
+    <div class="card-header"><span>📌 打卡日誌</span></div>
+    <div id="logList" class="log-list"><div class="empty-msg">本月尚無紀錄</div></div>
+</div>
+
+<div class="info-card">
+    <div class="card-header"><span>💰 薪資詳情 (本月)</span></div>
+    <div class="detail-item"><span>上班天數 (全+半)</span><b id="workDaysDisplay">0 日</b></div>
+    <div class="detail-item"><span>加班天數</span><b id="otDaysDisplay">0 天</b></div>
+    <div class="detail-item"><span>休假天數</span><b id="holidayDaysDisplay">0 天</b></div>
+    <div class="detail-item"><span>預估月薪</span><b id="estSalary" style="color: #d32f2f;">$ 0</b></div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBlXKqxqGGJqtREUOMT2B8uZtcezgdu-PRepLsU-m7hfkNotpCCnZ_1JS-I1P-UrVQAg/exec";
+    const DAY_RATE = 2100;
+
+    let current = new Date();
+    let viewYear = current.getFullYear();
+    let viewMonth = current.getMonth();
+    let attendanceData = {}; 
+
+    const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
+    async function initData() {
+        const loading = document.getElementById('loadingOverlay');
+        render(); 
+        try {
+            const res = await fetch(SCRIPT_URL);
+            attendanceData = await res.json();
+        } catch (e) { console.error(e); } finally {
+            if (loading) loading.style.display = 'none';
+            render();
+        }
+    }
+
+    function render() {
+        const body = document.getElementById('calendarBody');
+        const yearElem = document.getElementById('yearText');
+        const monthElem = document.getElementById('monthText');
+        yearElem.innerText = viewYear;
+        monthElem.innerText = monthNames[viewMonth];
+        body.innerHTML = '';
+
+        let firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        firstDay = (firstDay === 0) ? 6 : firstDay - 1; 
+        let lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
+        let prevLastDate = new Date(viewYear, viewMonth, 0).getDate();
+
+        for (let i = firstDay; i > 0; i--) { 
+            body.appendChild(createBtn(prevLastDate - i + 1, 'other-month')); 
+        }
+
+        const realToday = new Date();
+        for (let i = 1; i <= lastDate; i++) {
+            const dateStr = `${viewYear}-${viewMonth + 1}-${i}`;
+            const status = attendanceData[dateStr] || "";
+            let className = "";
+            let label = "";
+
+            if(status === "full") { className = "style-full"; label = "全"; }
+            else if(status === "half") { className = "style-half"; label = "半"; }
+            else if(status === "ot") { className = "style-ot"; label = "加"; }
+            else if(status === "holiday") { className = "style-holiday"; label = "休"; }
+            
+            const isToday = (i === realToday.getDate() && viewMonth === realToday.getMonth() && viewYear === realToday.getFullYear());
+            if (isToday) className += " is-today";
+
+            // 注意：這裡移除了原本的 hide-text，讓日期數字永遠顯示
+            const btn = createBtn(i, className, dateStr);
+            if(label) btn.setAttribute('data-label', label);
+            body.appendChild(btn);
+        }
         
-        <div class="info-grid">
-            <select id="selectyear" onchange="updateDayOptions(); loadData();"></select>
-            <select id="selectmonth" onchange="updateDayOptions(); loadData();"></select>
-        </div>
-
-        <div class="config-summary">
-            <div class="config-row">
-                <span>日薪 (全日)：</span>
-                <input type="number" id="dailyRate" value="1500" onchange="calculate()">
-            </div>
-            <div class="config-row">
-                <span>加班費率 (倍)：</span>
-                <input type="number" id="otMultiplier" value="1.33" step="0.01" onchange="calculate()">
-            </div>
-            <div class="config-row">
-                <span>扣勞健保：</span>
-                <input type="number" id="deduction" value="958" onchange="calculate()">
-            </div>
-            <div class="total-display">
-                實領金額：<b id="headerFinalSalary">0</b>
-            </div>
-        </div>
-
-        <div class="input-area">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px;">
-                <select id="inputDay"></select>
-                <select id="inputShift">
-                    <option value="full">全日</option>
-                    <option value="half">半日</option>
-                    <option value="overtime">加班</option>
-                </select>
-            </div>
-            <button class="add-btn" style="width: 100%;" onclick="addRecord()">新增紀錄</button>
-        </div>
-
-        <div class="btn-group">
-            <button class="save" onclick="window.print()">列印 / 存檔</button>
-            <button class="clear" onclick="clearTable()">清空本月</button>
-        </div>
-    </div>
-
-    <div class="data-container">
-        <div id="workDates"></div>
-        <div id="footerSummary" style="margin-top: 20px; text-align: right; padding: 10px; font-size: 14px; display: none;">
-            應領總計 (未扣)：<span id="footerTotalSalary" style="font-weight: bold;">0 元</span>
-        </div>
-    </div>
-
-    <script>
-        let tempTimeRecords = {};
-
-        // 初始化年月選單
-        function initYearMonth() {
-            const yearSel = document.getElementById('selectyear'), monthSel = document.getElementById('selectmonth');
-            const now = new Date();
-            for (let i = now.getFullYear() - 1; i <= now.getFullYear() + 1; i++) {
-                yearSel.add(new Option(i + "年", i, i === now.getFullYear(), i === now.getFullYear()));
-            }
-            for (let i = 1; i <= 12; i++) {
-                monthSel.add(new Option(i + "月", i, i === (now.getMonth() + 1), i === (now.getMonth() + 1)));
-            }
-            updateDayOptions(); // 初始化日期(天)的下拉選單
+        const currentCells = body.children.length;
+        const targetCells = currentCells > 35 ? 42 : 35;
+        for (let i = 1; i <= (targetCells - currentCells); i++) { 
+            body.appendChild(createBtn(i, 'other-month')); 
         }
+        updateInfo();
+    }
 
-        // 根據選中的年月，更新「日」的選項
-        function updateDayOptions() {
-            const year = parseInt(document.getElementById('selectyear').value);
-            const month = parseInt(document.getElementById('selectmonth').value);
-            const daySel = document.getElementById('inputDay');
+    let syncTimer = null; // 用來存放計時器，避免重複發送
+
+function createBtn(text, className, dateStr) {
+    const btn = document.createElement('button');
+    btn.className = `date-btn ${className}`;
+    btn.innerText = text;
+    
+    btn.onclick = () => {
+        if(dateStr && !btn.classList.contains('other-month')) {
+            // 1. 定義狀態順序
+            const statusOrder = ["", "full", "half", "ot", "holiday"];
             
-            // 取得該月最後一天
-            const lastDay = new Date(year, month, 0).getDate();
-            const currentDay = new Date().getDate();
-
-            daySel.innerHTML = '';
-            for (let i = 1; i <= lastDay; i++) {
-                daySel.add(new Option(i + "日", i, i === currentDay, i === currentDay));
-            }
-        }
-
-        function addRecord() {
-            const year = document.getElementById('selectyear').value;
-            const month = document.getElementById('selectmonth').value.padStart(2, '0');
-            const day = document.getElementById('inputDay').value.padStart(2, '0');
-            const fullDate = `${year}-${month}-${day}`; // 組合成標準格式儲存
+            // 2. 先抓取「目前畫面」顯示的狀態
+            let currentStatus = attendanceData[dateStr] || "";
             
-            const shift = document.getElementById('inputShift').value;
-            tempTimeRecords[fullDate] = shift;
-            calculate();
-        }
-
-        function deleteRecord(date) {
-            delete tempTimeRecords[date];
-            calculate();
-        }
-
-        function calculate() {
-            const container = document.getElementById('workDates');
-            const footer = document.getElementById('footerSummary');
-            const rate = parseFloat(document.getElementById("dailyRate").value) || 0;
-            const deduction = parseFloat(document.getElementById("deduction").value) || 0;
-            const otMult = parseFloat(document.getElementById("otMultiplier").value) || 1;
+            // 3. 計算下一個狀態並「立即更新畫面」
+            let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
+            let nextStatus = statusOrder[nextIndex];
             
-            container.innerHTML = '';
-            let totalSalary = 0;
-            const sortedDates = Object.keys(tempTimeRecords).sort();
+            attendanceData[dateStr] = nextStatus;
+            render(); // 讓使用者先看到正確的樣式
 
-            if (sortedDates.length === 0) {
-                container.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:20px; color:#999;">尚未有紀錄</div>';
-                footer.style.display = "none";
-                document.getElementById("headerFinalSalary").innerText = "0 元";
-            } else {
-                footer.style.display = "block";
-                sortedDates.forEach(date => {
-                    const shiftKey = tempTimeRecords[date];
-                    let multiplier = 1, label = "全日";
-                    if (shiftKey === 'half') { multiplier = 0.5; label = "半日"; }
-                    else if (shiftKey === 'overtime') { multiplier = otMult; label = "加班"; }
+            // 4. 【核心優化】延遲同步：等使用者「停下手」才去記目前畫面上的樣式
+            if (syncTimer) clearTimeout(syncTimer); // 如果還在點，就取消之前的紀錄動作
 
-                    const pay = Math.floor(rate * multiplier);
-                    totalSalary += pay;
+            syncTimer = setTimeout(async () => {
+                // 這裡會抓取這一個瞬間，畫面上該日期的最新樣式
+                const finalStatusToRecord = attendanceData[dateStr];
+                
+                console.log(`同步中：日期 ${dateStr} 目前樣式為 ${finalStatusToRecord}`);
+                
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        mode: "no-cors", 
+                        body: JSON.stringify({ 
+                            date: dateStr, 
+                            status: finalStatusToRecord // 記住：這裡記的是「最終樣式」
+                        })
+                    });
+                } catch (e) { 
+                    console.error("同步失敗", e); 
+                }
+            }, 800); // 設定 800 毫秒（0.8秒），等你點到滿意的樣式停下來後才發送
+        }
+    };
+    return btn;
+}
 
-                    const card = document.createElement('div');
-                    card.className = 'record-card';
-                    if(shiftKey === 'overtime') card.style.borderLeftColor = 'var(--danger)';
-                    if(shiftKey === 'half') card.style.borderLeftColor = 'var(--accent)';
+    function updateInfo() {
+    const logList = document.getElementById('logList');
+    const workDaysDisplay = document.getElementById('workDaysDisplay');
+    const otDaysDisplay = document.getElementById('otDaysDisplay');
+    const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
+    const estSalaryElem = document.getElementById('estSalary');
 
-                    card.innerHTML = `
-                        <div class="delete-mark" onclick="deleteRecord('${date}')">×</div>
-                        <div style="font-weight:bold;">${date}</div>
-                        <div style="font-size: 0.85rem; color:#666;">${label} (x${multiplier})</div>
-                        <div style="color:var(--danger); font-weight:bold; margin-top:5px;">$${pay.toLocaleString()}</div>
-                    `;
-                    container.appendChild(card);
-                });
-            }
+    let logHTML = ''; 
+    let workDaysCount = 0;   // 全天 + 半天 的加總
+    let otDaysCount = 0;     // 加班天數
+    let holidayDaysCount = 0; // 休假天數
+    let totalSalaryScore = 0; // 用於計算薪水的總分
 
-            const final = totalSalary - deduction;
-            document.getElementById("footerTotalSalary").innerText = totalSalary.toLocaleString() + " 元";
-            document.getElementById("headerFinalSalary").innerText = final.toLocaleString() + " 元";
-            saveToBrowser();
+    // 取得本月所有日期並排序
+    const sortedDates = Object.keys(attendanceData)
+        .filter(d => d.split('-')[0] == viewYear && d.split('-')[1] == (viewMonth + 1))
+        .sort((a, b) => parseInt(b.split('-')[2]) - parseInt(a.split('-')[2]));
+
+    sortedDates.forEach(date => {
+        const status = attendanceData[date];
+        let name = ""; 
+        
+        if (status === "full") { 
+            name = "全天上班"; 
+            workDaysCount += 1;
+            totalSalaryScore += 1;
+        }
+        else if (status === "half") { 
+            name = "半天上班"; 
+            workDaysCount += 0.5;
+            totalSalaryScore += 0.5;
+        }
+        else if (status === "ot") { 
+            name = "加班紀錄"; 
+            otDaysCount += 1;
+            totalSalaryScore += 1.2; // 假設加班費權重為 1.2，可自行調整
+        }
+        else if (status === "holiday") { 
+            name = "休息日"; 
+            holidayDaysCount += 1;
         }
 
-        function saveToBrowser() {
-            const year = document.getElementById("selectyear").value;
-            const month = document.getElementById("selectmonth").value;
-            localStorage.setItem(`personal_data_${year}_${month}`, JSON.stringify(tempTimeRecords));
-            localStorage.setItem(`set_dailyRate`, document.getElementById("dailyRate").value);
-            localStorage.setItem(`set_deduction`, document.getElementById("deduction").value);
-            localStorage.setItem(`set_otMult`, document.getElementById("otMultiplier").value);
+        if (status && status !== "") {
+            logHTML += `<div class="log-item"><div class="log-date">${date.replace(/-/g, '/')}</div><div>${name}</div></div>`;
         }
+    });
 
-        function loadData() {
-            const year = document.getElementById("selectyear").value;
-            const month = document.getElementById("selectmonth").value;
-            const savedRecords = localStorage.getItem(`personal_data_${year}_${month}`);
-            tempTimeRecords = savedRecords ? JSON.parse(savedRecords) : {};
-            
-            const r = localStorage.getItem(`set_dailyRate`); if(r) document.getElementById("dailyRate").value = r;
-            const d = localStorage.getItem(`set_deduction`); if(d) document.getElementById("deduction").value = d;
-            const o = localStorage.getItem(`set_otMult`); if(o) document.getElementById("otMultiplier").value = o;
+    // 更新介面數值
+    logList.innerHTML = logHTML || '<div class="empty-msg">本月尚無紀錄</div>';
+    workDaysDisplay.innerText = `${workDaysCount} 日`;
+    otDaysDisplay.innerText = `${otDaysCount} 天`;
+    holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
+    
+    // 計算薪資 (使用總分 * 日薪)
+    estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
+}
 
-            calculate();
-        }
-
-        function clearTable() {
-            if (confirm("確定清空本月紀錄？")) {
-                tempTimeRecords = {};
-                calculate();
-            }
-        }
-
-        window.onload = () => { initYearMonth(); loadData(); };
-    </script>
+    function changeMonth(step) {
+        viewMonth += step;
+        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        else if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        render();
+    }
+    function goToday() { viewYear = current.getFullYear(); viewMonth = current.getMonth(); render(); }
+    initData();
+</script>
 </body>
 </html>
