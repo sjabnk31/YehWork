@@ -3,12 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="葉打卡">
-    <link rel="apple-touch-icon" href="angrybird.jpg">
-    <link rel="apple-touch-icon" sizes="180x180" href="angrybird.jpg">
-    <link rel="apple-touch-icon-precomposed" href="angrybird.jpg">
     <title>葉打卡</title>
     <style>
     :root {
@@ -112,6 +106,44 @@
 
     #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* 收合功能相關 CSS */
+.log-list {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out; /* 平滑收合動畫 */
+    max-height: 1000px; /* 預設展開狀態的上限高度 */
+}
+
+/* 當標記為 collapsed 時隱藏 */
+.log-list.collapsed {
+    max-height: 0;
+}
+
+/* 控制按鈕樣式 */
+.toggle-btn {
+    background: #e1f7f9;
+    color: #1a5276;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 旋轉箭頭圖示 */
+.toggle-icon {
+    display: inline-block;
+    transition: transform 0.3s;
+}
+
+.collapsed-icon {
+    transform: rotate(-90deg);
+}
+
     </style>
 </head>
 <body>
@@ -143,8 +175,6 @@
         <div class="legend-item"><div class="dot style-holiday">休</div>休息</div>
     </div>
 </div>
-
-
 <div class="info-card">
     <div class="card-header"><span>💰 薪資詳情 (本月)</span></div>
     <div class="detail-item"><span>上班天數 (全+半)</span><b id="workDaysDisplay">0 日</b></div>
@@ -152,6 +182,22 @@
     <div class="detail-item"><span>休假天數</span><b id="holidayDaysDisplay">0 天</b></div>
     <div class="detail-item"><span>預估月薪</span><b id="estSalary" style="color: #d32f2f;">$ 0</b></div>
 </div>
+<div class="info-card">
+    <div class="card-header">
+        <span>📌 打卡日誌</span>
+        <!-- 新增收起按鈕 -->
+        <button class="toggle-btn" onclick="toggleLogs()">
+            <span id="toggleText">收起</span>
+            <span id="toggleIcon" class="toggle-icon">▼</span>
+        </button>
+    </div>
+    <!-- 給日誌列表一個 id 方便控制 -->
+    <div id="logList" class="log-list">
+        <div class="empty-msg">本月尚無紀錄</div>
+    </div>
+</div>
+
+
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBlXKqxqGGJqtREUOMT2B8uZtcezgdu-PRepLsU-m7hfkNotpCCnZ_1JS-I1P-UrVQAg/exec";
@@ -272,7 +318,7 @@ function createBtn(text, className, dateStr) {
 }
 
     function updateInfo() {
-    //const logList = document.getElementById('logList');
+    const logList = document.getElementById('logList');
     const workDaysDisplay = document.getElementById('workDaysDisplay');
     const otDaysDisplay = document.getElementById('otDaysDisplay');
     const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
@@ -306,7 +352,7 @@ function createBtn(text, className, dateStr) {
         else if (status === "ot") { 
             name = "加班紀錄"; 
             otDaysCount += 1;
-            totalSalaryScore += 1.5; // 假設加班費權重為 1.2，可自行調整
+            totalSalaryScore += 1.2; // 假設加班費權重為 1.2，可自行調整
         }
         else if (status === "holiday") { 
             name = "休息日"; 
@@ -319,13 +365,33 @@ function createBtn(text, className, dateStr) {
     });
 
     // 更新介面數值
-    //logList.innerHTML = logHTML || '<div class="empty-msg">本月尚無紀錄</div>';
+    logList.innerHTML = logHTML || '<div class="empty-msg">本月尚無紀錄</div>';
     workDaysDisplay.innerText = `${workDaysCount} 日`;
     otDaysDisplay.innerText = `${otDaysCount} 天`;
     holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
     
     // 計算薪資 (使用總分 * 日薪)
     estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
+}
+
+    function toggleLogs() {
+    const logList = document.getElementById('logList');
+    const toggleText = document.getElementById('toggleText');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    // 切換 collapsed 類別
+    const isCollapsed = logList.classList.toggle('collapsed');
+    
+    // 更新按鈕文字與旋轉圖示
+    if (isCollapsed) {
+        toggleText.innerText = "展開";
+        toggleIcon.classList.add('collapsed-icon');
+        toggleIcon.innerText = "◀"; // 或者保持 ▼ 只是旋轉它
+    } else {
+        toggleText.innerText = "收起";
+        toggleIcon.classList.remove('collapsed-icon');
+        toggleIcon.innerText = "▼";
+    }
 }
 
     function changeMonth(step) {
