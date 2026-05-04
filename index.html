@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>小葉打卡</title>
-    <link rel="icon" href="angrybird.jpg" type="image/jpeg">
-    <link rel="apple-touch-icon" href="angrybird.jpg">
     <style>
     :root {
         --bg-full: #fff176;     --text-full: #5d4037;
@@ -14,45 +12,51 @@
         --bg-holiday: #ffebee;  --text-holiday: #d32f2f;
         --calendar-main-bg: #e1f7f9;
         --text-main: #1a5276;
-        --today-marker: #1a5276; 
+        --today-marker: #1a5276;
         --border-soft: #b2ebf2;
         --btn-edit: #1a5276;    
         --btn-locked: #90a4ae;
     }
 
+
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-    
-    body { 
+   
+    body {
         font-family: -apple-system, "Microsoft JhengHei", sans-serif;
         background: #f8fafb; margin: 0; padding: 15px 10px;
         display: flex; flex-direction: column; align-items: center;
     }
 
-    .calendar-card { 
-        background: var(--calendar-main-bg); width: 100%; max-width: 450px; 
-        border-radius: 28px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); 
+
+    .calendar-card {
+        background: var(--calendar-main-bg); width: 100%; max-width: 450px;
+        border-radius: 28px; padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04);
         transition: 0.3s;
     }
+
 
     /* 鎖定時的日曆樣式：增加半透明感與濾鏡 */
     .calendar-locked { opacity: 0.8; filter: saturate(0.8); }
     .calendar-locked .date-btn { cursor: not-allowed !important; }
 
+
     /* 導覽列調整 */
-    .nav-bar { 
-        display: flex; justify-content: space-between; align-items: center; 
+    .nav-bar {
+        display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 18px; gap: 8px;
     }
-    
+   
     .nav-left { display: flex; align-items: center; gap: 10px; flex: 1; }
     .calendar-title-text { color: var(--text-main); font-size: 1.2rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
 
-    .nav-btn { 
-        width: 36px; height: 36px; border-radius: 50%; border: none; 
-        background: rgba(255, 255, 255, 0.5); color: var(--text-main); 
-        font-size: 18px; display: flex; justify-content: center; 
+
+    .nav-btn {
+        width: 36px; height: 36px; border-radius: 50%; border: none;
+        background: rgba(255, 255, 255, 0.5); color: var(--text-main);
+        font-size: 18px; display: flex; justify-content: center;
         align-items: center; cursor: pointer; flex-shrink: 0;
     }
+
 
     /* 狀態切換按鈕 */
     .toggle-status-btn {
@@ -65,8 +69,10 @@
     .status-editing { background-color: var(--btn-edit); color: white; }
     .status-settled { background-color: var(--btn-locked); color: white; }
 
+
     .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
     .weekday { text-align: center; font-size: 13px; font-weight: bold; color: #70dae8; padding-bottom: 8px; }
+
 
     .date-btn {
         aspect-ratio: 1; border: 1px solid var(--border-soft); background: white;
@@ -75,10 +81,12 @@
         position: relative; padding: 0; outline: none; transition: 0.2s; cursor: pointer;
     }
 
+
     .date-btn[data-label]::after {
-        content: attr(data-label); position: absolute; top: 3px; right: 3px; 
+        content: attr(data-label); position: absolute; top: 3px; right: 3px;
         font-size: 10px; font-weight: 900; color: inherit;
     }
+
 
     .is-today { border: 3px solid var(--today-marker) !important; position: relative; }
     .is-today[class*="style-"] { border: none !important; }
@@ -87,20 +95,25 @@
         font-size: 9px; font-weight: 900; color: var(--today-marker); z-index: 2;
     }
 
+
     .style-full { background-color: var(--bg-full) !important; color: var(--text-full) !important; border: none !important; }
     .style-half { background-color: var(--bg-half) !important; color: var(--text-half) !important; border: none !important; }
     .style-ot { background-color: var(--bg-ot) !important; color: var(--text-ot) !important; border: none !important; }
     .style-holiday { background-color: var(--bg-holiday) !important; color: var(--text-holiday) !important; border: none !important; }
 
+
     .other-month { opacity: 0.1 !important; pointer-events: none; background: transparent !important; border: none !important; }
+
 
     .legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; font-size: 12px; color: var(--text-main); text-align: center; }
     .legend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .dot { width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
 
+
     .info-card { background: white; width: 100%; max-width: 450px; border-radius: 24px; padding: 20px; margin-top: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #1a5276; font-size: 16px; }
     .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f2f5; font-size: 15px; }
+
 
     #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -108,10 +121,12 @@
 </head>
 <body>
 
+
 <div id="loadingOverlay">
     <div style="width: 45px; height: 45px; border: 4px solid #f3f3f3; border-top: 4px solid #1a5276; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
     <p style="margin-top: 15px; color: #1a5276; font-weight: bold;">資料讀取中...</p>
 </div>
+
 
 <div class="calendar-card" id="mainCalendar">
     <div class="nav-bar">
@@ -122,12 +137,13 @@
             </div>
             <button class="nav-btn" onclick="changeMonth(1)">›</button>
         </div>
-        
+       
         <!-- 整合進導覽列的狀態按鈕 -->
         <button id="statusBtn" class="toggle-status-btn status-editing" onclick="handleBtnClick()">
             <span id="statusIcon">✏️</span> <span id="statusText">記錄中</span>
         </button>
     </div>
+
 
     <div class="days-grid">
         <div class="weekday">一</div><div class="weekday">二</div><div class="weekday">三</div>
@@ -135,7 +151,7 @@
         <div class="weekday">日</div>
     </div>
     <div id="calendarBody" class="days-grid"></div>
-    
+   
     <div class="legend">
         <div class="legend-item"><div class="dot style-full">全</div>全日</div>
         <div class="legend-item"><div class="dot style-half">半</div>半日</div>
@@ -143,6 +159,7 @@
         <div class="legend-item"><div class="dot style-holiday">休</div>休息</div>
     </div>
 </div>
+
 
 <div class="info-card">
     <div class="card-header"><span>💰 薪資詳情 (本月)</span></div>
@@ -152,28 +169,34 @@
     <div class="detail-item"><span>預估月薪</span><b id="estSalary" style="color: #d32f2f;">$ 0</b></div>
 </div>
 
+
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBlXKqxqGGJqtREUOMT2B8uZtcezgdu-PRepLsU-m7hfkNotpCCnZ_1JS-I1P-UrVQAg/exec";
     const DAY_RATE = 2100;
 
+
     let current = new Date();
     let viewYear = current.getFullYear();
     let viewMonth = current.getMonth();
-    let attendanceData = {}; 
+    let attendanceData = {};
     let isSettled = false;
 
+
     const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
 
     function handleBtnClick() {
         isSettled = !isSettled;
         updateStatusUI();
     }
 
+
     function updateStatusUI() {
         const btn = document.getElementById('statusBtn');
         const icon = document.getElementById('statusIcon');
         const text = document.getElementById('statusText');
         const calendar = document.getElementById('mainCalendar');
+
 
         if (isSettled) {
             btn.className = "toggle-status-btn status-settled";
@@ -188,6 +211,7 @@
         }
     }
 
+
     function checkAutoStatus() {
         const realToday = new Date();
         const realYear = realToday.getFullYear();
@@ -197,10 +221,11 @@
         updateStatusUI();
     }
 
+
     async function initData() {
         const loading = document.getElementById('loadingOverlay');
         checkAutoStatus();
-        render(); 
+        render();
         try {
             const res = await fetch(SCRIPT_URL);
             attendanceData = await res.json();
@@ -210,20 +235,24 @@
         }
     }
 
+
     function render() {
         const body = document.getElementById('calendarBody');
         document.getElementById('yearText').innerText = viewYear;
         document.getElementById('monthText').innerText = monthNames[viewMonth];
         body.innerHTML = '';
 
+
         let firstDay = new Date(viewYear, viewMonth, 1).getDay();
-        firstDay = (firstDay === 0) ? 6 : firstDay - 1; 
+        firstDay = (firstDay === 0) ? 6 : firstDay - 1;
         let lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
         let prevLastDate = new Date(viewYear, viewMonth, 0).getDate();
 
-        for (let i = firstDay; i > 0; i--) { 
-            body.appendChild(createBtn(prevLastDate - i + 1, 'other-month')); 
+
+        for (let i = firstDay; i > 0; i--) {
+            body.appendChild(createBtn(prevLastDate - i + 1, 'other-month'));
         }
+
 
         const realToday = new Date();
         for (let i = 1; i <= lastDate; i++) {
@@ -232,64 +261,71 @@
             let className = "";
             let label = "";
 
+
             if(status === "full") { className = "style-full"; label = "全"; }
             else if(status === "half") { className = "style-half"; label = "半"; }
             else if(status === "ot") { className = "style-ot"; label = "加"; }
             else if(status === "holiday") { className = "style-holiday"; label = "休"; }
-            
+           
             const isToday = (i === realToday.getDate() && viewMonth === realToday.getMonth() && viewYear === realToday.getFullYear());
             if (isToday) className += " is-today";
+
 
             const btn = createBtn(i, className, dateStr);
             if(label) btn.setAttribute('data-label', label);
             body.appendChild(btn);
         }
-        
+       
         const currentCells = body.children.length;
         const targetCells = currentCells > 35 ? 42 : 35;
-        for (let i = 1; i <= (targetCells - currentCells); i++) { 
-            body.appendChild(createBtn(i, 'other-month')); 
+        for (let i = 1; i <= (targetCells - currentCells); i++) {
+            body.appendChild(createBtn(i, 'other-month'));
         }
         updateInfo();
     }
 
-    let syncTimer = null; 
+
+    let syncTimer = null;
+
 
     function createBtn(text, className, dateStr) {
         const btn = document.createElement('button');
         btn.className = `date-btn ${className}`;
         btn.innerText = text;
-        
+       
         btn.onclick = () => {
-            if (isSettled) return; 
+            if (isSettled) return;
+
 
             if(dateStr && !btn.classList.contains('other-month')) {
                 const statusOrder = ["", "full", "half", "ot", "holiday"];
                 let currentStatus = attendanceData[dateStr] || "";
                 let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
                 let nextStatus = statusOrder[nextIndex];
-                
+               
                 attendanceData[dateStr] = nextStatus;
-                render(); 
+                render();
 
-                if (syncTimer) clearTimeout(syncTimer); 
+
+                if (syncTimer) clearTimeout(syncTimer);
                 syncTimer = setTimeout(async () => {
                     const finalStatusToRecord = attendanceData[dateStr];
                     try {
                         await fetch(SCRIPT_URL, {
                             method: "POST",
-                            mode: "no-cors", 
-                            body: JSON.stringify({ 
-                                date: dateStr, 
-                                status: finalStatusToRecord 
+                            mode: "no-cors",
+                            body: JSON.stringify({
+                                date: dateStr,
+                                status: finalStatusToRecord
                             })
                         });
                     } catch (e) { console.error("同步失敗", e); }
-                }, 800); 
+                }, 800);
             }
         };
         return btn;
     }
+
 
     function updateInfo() {
         const workDaysDisplay = document.getElementById('workDaysDisplay');
@@ -297,10 +333,12 @@
         const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
         const estSalaryElem = document.getElementById('estSalary');
 
-        let workDaysCount = 0;   
-        let otDaysCount = 0;     
-        let holidayDaysCount = 0; 
-        let totalSalaryScore = 0; 
+
+        let workDaysCount = 0;  
+        let otDaysCount = 0;    
+        let holidayDaysCount = 0;
+        let totalSalaryScore = 0;
+
 
         Object.keys(attendanceData).forEach(date => {
             if (date.split('-')[0] == viewYear && date.split('-')[1] == (viewMonth + 1)) {
@@ -312,11 +350,13 @@
             }
         });
 
+
         workDaysDisplay.innerText = `${workDaysCount} 日`;
         otDaysDisplay.innerText = `${otDaysCount} 天`;
         holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
         estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
     }
+
 
     function changeMonth(step) {
         viewMonth += step;
@@ -325,15 +365,17 @@
         checkAutoStatus();
         render();
     }
-    
-    function goToday() { 
-        viewYear = current.getFullYear(); 
-        viewMonth = current.getMonth(); 
+   
+    function goToday() {
+        viewYear = current.getFullYear();
+        viewMonth = current.getMonth();
         checkAutoStatus();
-        render(); 
+        render();
     }
+
 
     initData();
 </script>
 </body>
 </html>
+
