@@ -12,7 +12,7 @@
         --bg-holiday: #ffebee;  --text-holiday: #d32f2f;
         --calendar-main-bg: #e1f7f9;
         --text-main: #1a5276;
-        --today-marker: #1a5276; /* 「今」字的顏色 */
+        --today-marker: #1a5276; 
         --border-soft: #b2ebf2;
     }
 
@@ -36,7 +36,6 @@
     .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
     .weekday { text-align: center; font-size: 13px; font-weight: bold; color: #70dae8; padding-bottom: 8px; }
 
-    /* --- 日期按鈕基礎 --- */
     .date-btn {
         aspect-ratio: 1; border: 1px solid var(--border-soft); background: white;
         border-radius: 50%; display: flex; justify-content: center; align-items: center;
@@ -44,28 +43,22 @@
         position: relative; padding: 0; outline: none; transition: 0.2s;
     }
 
-    /* 狀態標籤（右上角） */
     .date-btn[data-label]::after {
         content: attr(data-label); position: absolute; top: 3px; right: 3px; 
         font-size: 10px; font-weight: 900; color: inherit;
     }
 
-   /* --- 今天的特別樣式 --- */
-
-    /* 1. 當「今天」還沒有打卡狀態時：顯示粗邊框與底部的「今」 */
     .is-today {
         border: 3px solid var(--today-marker) !important;
         position: relative;
         box-shadow: 0 0 10px rgba(26, 82, 118, 0.1);
     }
 
-    /* 2. 當「今天」有了打卡狀態（含有 style- 類別時）：拿掉邊框，恢復成一般的樣子 */
     .is-today[class*="style-"] {
         border: none !important;
         box-shadow: none;
     }
 
-    /* 3. 無論有沒有打卡，「今」字都顯示在數字下方 */
     .is-today::before {
         content: "今";
         position: absolute;
@@ -75,15 +68,14 @@
         font-size: 9px;
         font-weight: 900;
         color: var(--today-marker);
-        z-index: 2; /* 確保在背景顏色之上 */
+        z-index: 2;
     }
 
-    /* 4. 打卡後，讓「今」字顏色自動跟隨該狀態的文字顏色（例如全日變深棕色） */
     .is-today[class*="style-"]::before {
         color: inherit;
-        bottom: 4px; /* 打卡後沒邊框了，稍微往下一點點 */
+        bottom: 4px;
     }
-    /* 狀態顏色 */
+
     .style-full { background-color: var(--bg-full) !important; color: var(--text-full) !important; border: none !important; }
     .style-half { background-color: var(--bg-half) !important; color: var(--text-half) !important; border: none !important; }
     .style-ot { background-color: var(--bg-ot) !important; color: var(--text-ot) !important; border: none !important; }
@@ -91,59 +83,16 @@
 
     .other-month { opacity: 0.1 !important; pointer-events: none; background: transparent !important; border: none !important; }
 
-    /* 圖例與資訊卡片 */
     .legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; font-size: 12px; color: var(--text-main); text-align: center; }
     .legend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .dot { width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; }
 
     .info-card { background: white; width: 100%; max-width: 450px; border-radius: 24px; padding: 20px; margin-top: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: #1a5276; font-size: 16px; }
-    .log-list { border-left: 2px solid #e1f7f9; margin-left: 5px; padding-left: 15px; }
-    .log-item { position: relative; margin-bottom: 15px; font-size: 14px; }
-    .log-item::before { content: ''; position: absolute; left: -19px; top: 6px; width: 6px; height: 6px; background: #70dae8; border-radius: 50%; }
-    .log-date { color: #888; font-size: 12px; }
     .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f2f5; font-size: 15px; }
 
     #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* 收合功能相關 CSS */
-.log-list {
-    overflow: hidden;
-    transition: max-height 0.3s ease-out; /* 平滑收合動畫 */
-    max-height: 1000px; /* 預設展開狀態的上限高度 */
-}
-
-/* 當標記為 collapsed 時隱藏 */
-.log-list.collapsed {
-    max-height: 0;
-}
-
-/* 控制按鈕樣式 */
-.toggle-btn {
-    background: #e1f7f9;
-    color: #1a5276;
-    border: none;
-    border-radius: 12px;
-    padding: 4px 12px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-/* 旋轉箭頭圖示 */
-.toggle-icon {
-    display: inline-block;
-    transition: transform 0.3s;
-}
-
-.collapsed-icon {
-    transform: rotate(-90deg);
-}
-
     </style>
 </head>
 <body>
@@ -175,6 +124,7 @@
         <div class="legend-item"><div class="dot style-holiday">休</div>休息</div>
     </div>
 </div>
+
 <div class="info-card">
     <div class="card-header"><span>💰 薪資詳情 (本月)</span></div>
     <div class="detail-item"><span>上班天數 (全+半)</span><b id="workDaysDisplay">0 日</b></div>
@@ -182,22 +132,6 @@
     <div class="detail-item"><span>休假天數</span><b id="holidayDaysDisplay">0 天</b></div>
     <div class="detail-item"><span>預估月薪</span><b id="estSalary" style="color: #d32f2f;">$ 0</b></div>
 </div>
-<div class="info-card">
-    <div class="card-header">
-        <span>📌 打卡日誌</span>
-        <!-- 新增收起按鈕 -->
-        <button class="toggle-btn" onclick="toggleLogs()">
-            <span id="toggleText">收起</span>
-            <span id="toggleIcon" class="toggle-icon">▼</span>
-        </button>
-    </div>
-    <!-- 給日誌列表一個 id 方便控制 -->
-    <div id="logList" class="log-list">
-        <div class="empty-msg">本月尚無紀錄</div>
-    </div>
-</div>
-
-
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBlXKqxqGGJqtREUOMT2B8uZtcezgdu-PRepLsU-m7hfkNotpCCnZ_1JS-I1P-UrVQAg/exec";
@@ -254,7 +188,6 @@
             const isToday = (i === realToday.getDate() && viewMonth === realToday.getMonth() && viewYear === realToday.getFullYear());
             if (isToday) className += " is-today";
 
-            // 注意：這裡移除了原本的 hide-text，讓日期數字永遠顯示
             const btn = createBtn(i, className, dateStr);
             if(label) btn.setAttribute('data-label', label);
             body.appendChild(btn);
@@ -268,131 +201,82 @@
         updateInfo();
     }
 
-    let syncTimer = null; // 用來存放計時器，避免重複發送
+    let syncTimer = null; 
 
-function createBtn(text, className, dateStr) {
-    const btn = document.createElement('button');
-    btn.className = `date-btn ${className}`;
-    btn.innerText = text;
-    
-    btn.onclick = () => {
-        if(dateStr && !btn.classList.contains('other-month')) {
-            // 1. 定義狀態順序
-            const statusOrder = ["", "full", "half", "ot", "holiday"];
-            
-            // 2. 先抓取「目前畫面」顯示的狀態
-            let currentStatus = attendanceData[dateStr] || "";
-            
-            // 3. 計算下一個狀態並「立即更新畫面」
-            let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
-            let nextStatus = statusOrder[nextIndex];
-            
-            attendanceData[dateStr] = nextStatus;
-            render(); // 讓使用者先看到正確的樣式
-
-            // 4. 【核心優化】延遲同步：等使用者「停下手」才去記目前畫面上的樣式
-            if (syncTimer) clearTimeout(syncTimer); // 如果還在點，就取消之前的紀錄動作
-
-            syncTimer = setTimeout(async () => {
-                // 這裡會抓取這一個瞬間，畫面上該日期的最新樣式
-                const finalStatusToRecord = attendanceData[dateStr];
+    function createBtn(text, className, dateStr) {
+        const btn = document.createElement('button');
+        btn.className = `date-btn ${className}`;
+        btn.innerText = text;
+        
+        btn.onclick = () => {
+            if(dateStr && !btn.classList.contains('other-month')) {
+                const statusOrder = ["", "full", "half", "ot", "holiday"];
+                let currentStatus = attendanceData[dateStr] || "";
+                let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
+                let nextStatus = statusOrder[nextIndex];
                 
-                console.log(`同步中：日期 ${dateStr} 目前樣式為 ${finalStatusToRecord}`);
-                
-                try {
-                    await fetch(SCRIPT_URL, {
-                        method: "POST",
-                        mode: "no-cors", 
-                        body: JSON.stringify({ 
-                            date: dateStr, 
-                            status: finalStatusToRecord // 記住：這裡記的是「最終樣式」
-                        })
-                    });
-                } catch (e) { 
-                    console.error("同步失敗", e); 
-                }
-            }, 800); // 設定 800 毫秒（0.8秒），等你點到滿意的樣式停下來後才發送
-        }
-    };
-    return btn;
-}
+                attendanceData[dateStr] = nextStatus;
+                render(); 
+
+                if (syncTimer) clearTimeout(syncTimer); 
+
+                syncTimer = setTimeout(async () => {
+                    const finalStatusToRecord = attendanceData[dateStr];
+                    try {
+                        await fetch(SCRIPT_URL, {
+                            method: "POST",
+                            mode: "no-cors", 
+                            body: JSON.stringify({ 
+                                date: dateStr, 
+                                status: finalStatusToRecord 
+                            })
+                        });
+                    } catch (e) { 
+                        console.error("同步失敗", e); 
+                    }
+                }, 800); 
+            }
+        };
+        return btn;
+    }
 
     function updateInfo() {
-    const logList = document.getElementById('logList');
-    const workDaysDisplay = document.getElementById('workDaysDisplay');
-    const otDaysDisplay = document.getElementById('otDaysDisplay');
-    const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
-    const estSalaryElem = document.getElementById('estSalary');
+        const workDaysDisplay = document.getElementById('workDaysDisplay');
+        const otDaysDisplay = document.getElementById('otDaysDisplay');
+        const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
+        const estSalaryElem = document.getElementById('estSalary');
 
-    let logHTML = ''; 
-    let workDaysCount = 0;   // 全天 + 半天 的加總
-    let otDaysCount = 0;     // 加班天數
-    let holidayDaysCount = 0; // 休假天數
-    let totalSalaryScore = 0; // 用於計算薪水的總分
+        let workDaysCount = 0;   
+        let otDaysCount = 0;     
+        let holidayDaysCount = 0; 
+        let totalSalaryScore = 0; 
 
-    // 取得本月所有日期並排序
-    const sortedDates = Object.keys(attendanceData)
-        .filter(d => d.split('-')[0] == viewYear && d.split('-')[1] == (viewMonth + 1))
-        .sort((a, b) => parseInt(b.split('-')[2]) - parseInt(a.split('-')[2]));
+        Object.keys(attendanceData).forEach(date => {
+            if (date.split('-')[0] == viewYear && date.split('-')[1] == (viewMonth + 1)) {
+                const status = attendanceData[date];
+                if (status === "full") { 
+                    workDaysCount += 1;
+                    totalSalaryScore += 1;
+                }
+                else if (status === "half") { 
+                    workDaysCount += 0.5;
+                    totalSalaryScore += 0.5;
+                }
+                else if (status === "ot") { 
+                    otDaysCount += 1;
+                    totalSalaryScore += 1.2; 
+                }
+                else if (status === "holiday") { 
+                    holidayDaysCount += 1;
+                }
+            }
+        });
 
-    sortedDates.forEach(date => {
-        const status = attendanceData[date];
-        let name = ""; 
-        
-        if (status === "full") { 
-            name = "全天上班"; 
-            workDaysCount += 1;
-            totalSalaryScore += 1;
-        }
-        else if (status === "half") { 
-            name = "半天上班"; 
-            workDaysCount += 0.5;
-            totalSalaryScore += 0.5;
-        }
-        else if (status === "ot") { 
-            name = "加班紀錄"; 
-            otDaysCount += 1;
-            totalSalaryScore += 1.2; // 假設加班費權重為 1.2，可自行調整
-        }
-        else if (status === "holiday") { 
-            name = "休息日"; 
-            holidayDaysCount += 1;
-        }
-
-        if (status && status !== "") {
-            logHTML += `<div class="log-item"><div class="log-date">${date.replace(/-/g, '/')}</div><div>${name}</div></div>`;
-        }
-    });
-
-    // 更新介面數值
-    logList.innerHTML = logHTML || '<div class="empty-msg">本月尚無紀錄</div>';
-    workDaysDisplay.innerText = `${workDaysCount} 日`;
-    otDaysDisplay.innerText = `${otDaysCount} 天`;
-    holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
-    
-    // 計算薪資 (使用總分 * 日薪)
-    estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
-}
-
-    function toggleLogs() {
-    const logList = document.getElementById('logList');
-    const toggleText = document.getElementById('toggleText');
-    const toggleIcon = document.getElementById('toggleIcon');
-    
-    // 切換 collapsed 類別
-    const isCollapsed = logList.classList.toggle('collapsed');
-    
-    // 更新按鈕文字與旋轉圖示
-    if (isCollapsed) {
-        toggleText.innerText = "展開";
-        toggleIcon.classList.add('collapsed-icon');
-        toggleIcon.innerText = "◀"; // 或者保持 ▼ 只是旋轉它
-    } else {
-        toggleText.innerText = "收起";
-        toggleIcon.classList.remove('collapsed-icon');
-        toggleIcon.innerText = "▼";
+        workDaysDisplay.innerText = `${workDaysCount} 日`;
+        otDaysDisplay.innerText = `${otDaysCount} 天`;
+        holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
+        estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
     }
-}
 
     function changeMonth(step) {
         viewMonth += step;
