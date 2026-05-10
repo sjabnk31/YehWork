@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>小葉打卡</title>
+    <!-- 1. 圖示設定 -->
+    <link rel="apple-touch-icon" href="angrybird.jpg">
+    <link rel="icon" href="angrybird.jpg" type="image/jpeg">
+    <link rel="shortcut icon" href="angrybird.jpg">
+    
+    <!-- 2. Web App 模式設定 (讓它像個真正的 App) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
     <style>
     :root {
         --bg-full: #fff176;     --text-full: #5d4037;
@@ -217,15 +226,19 @@
     }
 
     // 2. 修正讀取邏輯：加入 empId, year, month 參數
+    // 修改後的 initData：確保每次執行時 loadingOverlay 都會顯示
     async function initData() {
         const loading = document.getElementById('loadingOverlay');
+        // 顯示載入中
+        if (loading) loading.style.display = 'flex'; 
+        
         checkAutoStatus();
         try {
             // 發送包含 empId 的 GET 請求
             const res = await fetch(`${SCRIPT_URL}?year=${viewYear}&month=${viewMonth + 1}&empId=${EMP_ID}`);
             const data = await res.json();
             
-            // 將後端傳回的 { "1": {s:"full"}, "2": {s:"ot"} } 格式轉化為本地格式
+            // 轉換資料格式
             attendanceData = {};
             for (let day in data) {
                 attendanceData[`${viewYear}-${viewMonth + 1}-${day}`] = data[day].s;
@@ -233,9 +246,36 @@
         } catch (e) { 
             console.error("資料讀取失敗", e); 
         } finally {
-            if (loading) loading.style.display = 'none';
+            // 渲染畫面
             render();
+            // 渲染完後隱藏載入中（稍微延遲 200ms 讓視覺更平滑）
+            setTimeout(() => {
+                if (loading) loading.style.display = 'none';
+            }, 200);
         }
+    }
+
+    // 修改後的 changeMonth：這本身會呼叫 initData，所以就會觸發 loading
+    function changeMonth(step) {
+        // 先顯示 loading 讓使用者知道反應
+        const loading = document.getElementById('loadingOverlay');
+        if (loading) loading.style.display = 'flex';
+
+        viewMonth += step;
+        if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        else if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        
+        initData(); // 切換月份重新抓取
+    }
+
+    // 修改後的 goToday：回到今天也加上 loading
+    function goToday() {
+        const loading = document.getElementById('loadingOverlay');
+        if (loading) loading.style.display = 'flex';
+        
+        viewYear = current.getFullYear();
+        viewMonth = current.getMonth();
+        initData();
     }
 
     function render() {
