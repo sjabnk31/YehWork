@@ -171,9 +171,10 @@
 
 
 <script>
+    // 1. 確保 URL 正確，並定義員工 ID
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBlXKqxqGGJqtREUOMT2B8uZtcezgdu-PRepLsU-m7hfkNotpCCnZ_1JS-I1P-UrVQAg/exec";
+    const EMP_ID = "小葉"; // 👈 明確指定為小葉
     const DAY_RATE = 2100;
-
 
     let current = new Date();
     let viewYear = current.getFullYear();
@@ -181,22 +182,18 @@
     let attendanceData = {};
     let isSettled = false;
 
-
     const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-
 
     function handleBtnClick() {
         isSettled = !isSettled;
         updateStatusUI();
     }
 
-
     function updateStatusUI() {
         const btn = document.getElementById('statusBtn');
         const icon = document.getElementById('statusIcon');
         const text = document.getElementById('statusText');
         const calendar = document.getElementById('mainCalendar');
-
 
         if (isSettled) {
             btn.className = "toggle-status-btn status-settled";
@@ -211,30 +208,35 @@
         }
     }
 
-
     function checkAutoStatus() {
         const realToday = new Date();
         const realYear = realToday.getFullYear();
         const realMonth = realToday.getMonth();
-        // 過往月份預設鎖定
         isSettled = (viewYear < realYear) || (viewYear === realYear && viewMonth < realMonth);
         updateStatusUI();
     }
 
-
+    // 2. 修正讀取邏輯：加入 empId, year, month 參數
     async function initData() {
         const loading = document.getElementById('loadingOverlay');
         checkAutoStatus();
-        render();
         try {
-            const res = await fetch(SCRIPT_URL);
-            attendanceData = await res.json();
-        } catch (e) { console.error(e); } finally {
+            // 發送包含 empId 的 GET 請求
+            const res = await fetch(`${SCRIPT_URL}?year=${viewYear}&month=${viewMonth + 1}&empId=${EMP_ID}`);
+            const data = await res.json();
+            
+            // 將後端傳回的 { "1": {s:"full"}, "2": {s:"ot"} } 格式轉化為本地格式
+            attendanceData = {};
+            for (let day in data) {
+                attendanceData[`${viewYear}-${viewMonth + 1}-${day}`] = data[day].s;
+            }
+        } catch (e) { 
+            console.error("資料讀取失敗", e); 
+        } finally {
             if (loading) loading.style.display = 'none';
             render();
         }
     }
-
 
     function render() {
         const body = document.getElementById('calendarBody');
@@ -242,17 +244,14 @@
         document.getElementById('monthText').innerText = monthNames[viewMonth];
         body.innerHTML = '';
 
-
         let firstDay = new Date(viewYear, viewMonth, 1).getDay();
         firstDay = (firstDay === 0) ? 6 : firstDay - 1;
         let lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
         let prevLastDate = new Date(viewYear, viewMonth, 0).getDate();
 
-
         for (let i = firstDay; i > 0; i--) {
             body.appendChild(createBtn(prevLastDate - i + 1, 'other-month'));
         }
-
 
         const realToday = new Date();
         for (let i = 1; i <= lastDate; i++) {
@@ -261,21 +260,19 @@
             let className = "";
             let label = "";
 
-
             if(status === "full") { className = "style-full"; label = "全"; }
             else if(status === "half") { className = "style-half"; label = "半"; }
             else if(status === "ot") { className = "style-ot"; label = "加"; }
             else if(status === "holiday") { className = "style-holiday"; label = "休"; }
-           
+            
             const isToday = (i === realToday.getDate() && viewMonth === realToday.getMonth() && viewYear === realToday.getFullYear());
             if (isToday) className += " is-today";
-
 
             const btn = createBtn(i, className, dateStr);
             if(label) btn.setAttribute('data-label', label);
             body.appendChild(btn);
         }
-       
+        
         const currentCells = body.children.length;
         const targetCells = currentCells > 35 ? 42 : 35;
         for (let i = 1; i <= (targetCells - currentCells); i++) {
@@ -284,38 +281,40 @@
         updateInfo();
     }
 
-
     let syncTimer = null;
 
-
+    // 3. 修正寫入邏輯：傳送時包含 empId
     function createBtn(text, className, dateStr) {
         const btn = document.createElement('button');
         btn.className = `date-btn ${className}`;
         btn.innerText = text;
-       
+        
         btn.onclick = () => {
             if (isSettled) return;
-
 
             if(dateStr && !btn.classList.contains('other-month')) {
                 const statusOrder = ["", "full", "half", "ot", "holiday"];
                 let currentStatus = attendanceData[dateStr] || "";
                 let nextIndex = (statusOrder.indexOf(currentStatus) + 1) % statusOrder.length;
                 let nextStatus = statusOrder[nextIndex];
-               
+                
                 attendanceData[dateStr] = nextStatus;
                 render();
-
 
                 if (syncTimer) clearTimeout(syncTimer);
                 syncTimer = setTimeout(async () => {
                     const finalStatusToRecord = attendanceData[dateStr];
                     try {
+                        // 轉換為與試算表一致的日期格式 YYYY/M/D
+                        const parts = dateStr.split('-');
+                        const formattedDate = `${parts[0]}/${parts[1]}/${parts[2]}`;
+
                         await fetch(SCRIPT_URL, {
                             method: "POST",
                             mode: "no-cors",
                             body: JSON.stringify({
-                                date: dateStr,
+                                empId: EMP_ID, // 👈 傳送員工 ID
+                                date: formattedDate,
                                 status: finalStatusToRecord
                             })
                         });
@@ -326,19 +325,16 @@
         return btn;
     }
 
-
     function updateInfo() {
         const workDaysDisplay = document.getElementById('workDaysDisplay');
         const otDaysDisplay = document.getElementById('otDaysDisplay');
         const holidayDaysDisplay = document.getElementById('holidayDaysDisplay');
         const estSalaryElem = document.getElementById('estSalary');
 
-
         let workDaysCount = 0;  
         let otDaysCount = 0;    
         let holidayDaysCount = 0;
         let totalSalaryScore = 0;
-
 
         Object.keys(attendanceData).forEach(date => {
             if (date.split('-')[0] == viewYear && date.split('-')[1] == (viewMonth + 1)) {
@@ -350,29 +346,24 @@
             }
         });
 
-
         workDaysDisplay.innerText = `${workDaysCount} 日`;
         otDaysDisplay.innerText = `${otDaysCount} 天`;
         holidayDaysDisplay.innerText = `${holidayDaysCount} 天`;
         estSalaryElem.innerText = `$ ${Math.round(totalSalaryScore * DAY_RATE).toLocaleString()}`;
     }
 
-
     function changeMonth(step) {
         viewMonth += step;
         if (viewMonth < 0) { viewMonth = 11; viewYear--; }
         else if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-        checkAutoStatus();
-        render();
+        initData(); // 切換月份重新抓取
     }
-   
+    
     function goToday() {
         viewYear = current.getFullYear();
         viewMonth = current.getMonth();
-        checkAutoStatus();
-        render();
+        initData();
     }
-
 
     initData();
 </script>
